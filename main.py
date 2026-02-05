@@ -1,17 +1,15 @@
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Body
+from sqlalchemy import insert, Table, Column, JSON, Integer, TIMESTAMP, MetaData, func
 from sqlalchemy.orm import Session
-from database import get_db
-from models import Base, MultipleTools, engine
+from sqlalchemy.exc import ProgrammingError
+from database import get_db, engine
+from models import Base, MultipleTools
+from auth import authenticate
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ProjectAlpha JSON Storage Service")
-
-from fastapi import Body
-from sqlalchemy import insert
-
-from auth import authenticate
 
 @app.post("/common")
 def store_common_json(
@@ -35,10 +33,6 @@ def store_common_json(
     db.execute(stmt)
     db.commit()
     return {"message": "JSON stored in common table"}
-
-
-from sqlalchemy import Table, Column, JSON, Integer, TIMESTAMP, MetaData
-from sqlalchemy.exc import ProgrammingError
 
 metadata = MetaData()
 
