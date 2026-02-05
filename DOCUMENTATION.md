@@ -1,164 +1,106 @@
-# **ProjectAlpha Storage Service — Common Table Documentation**
+
+# **ProjectAlpha Storage Service — Documentation**
 
 ### **Overview**
 
-The `/common` endpoint stores **JSON data from multiple tools** in a **shared PostgreSQL table** called `multiple_tools`.
-
-* **Small tools** or **low-sensitivity data** use this shared table.
-* **Sensitive data** can optionally require a **token** for authentication.
-
----
-
-## **Database Setup**
-
-1. Ensure your PostgreSQL database exists:
-
-```sql
-CREATE DATABASE projectalpha_db;
-CREATE USER alphauser WITH PASSWORD 'StrongPassword123!';
-GRANT ALL PRIVILEGES ON DATABASE projectalpha_db TO alphauser;
-```
-
-2. Environment file `.env` (in project folder):
-
-```
-DATABASE_URL=postgresql+psycopg2://alphauser:StrongPassword123!@localhost:5432/projectalpha_db
-```
-
-3. Database models (`models.py`):
-
-```python
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, JSON, TIMESTAMP, func
-
-Base = declarative_base()
-
-class MultipleTools(Base):
-    __tablename__ = "multiple_tools"
-
-    id = Column(Integer, primary_key=True, index=True)
-    tool_name = Column(String(50), nullable=False)
-    data = Column(JSON, nullable=False)
-    sensitive = Column(Integer, default=0)  # 0=public, 1=sensitive
-    created_at = Column(TIMESTAMP, server_default=func.now())
-```
-
-4. Create the table in the database:
-
-```python
-from database import engine
-from models import Base
-
-Base.metadata.create_all(bind=engine)
-print("Tables created successfully!")
-```
+This service provides JSON storage for multiple tools. It supports two modes:
+1. **Common Table**: Shared storage for small tools (`/common` endpoint).
+2. **Tool-Specific Tables**: Dedicated, dynamically created tables for registered tools (`/tools/{tool_id}` endpoint).
 
 ---
 
-## **API Endpoint**
+## **1. Common Storage (Legacy/Simple)**
 
 ### **POST /common**
-
-* **URL**: `https://storage.projectalpha.in/common`
-* **Method**: `POST`
-* **Purpose**: Store JSON data from multiple tools in the shared table.
-
----
-
-### **Headers**
-
-| Header      | Type | Required? | Description                                     |
-| ----------- | ---- | --------- | ----------------------------------------------- |
-| `tool-name` | str  | Yes       | Name of the tool sending the JSON               |
-| `sensitive` | int  | No        | 0 = public, 1 = sensitive (requires token if 1) |
-| `token`     | str  | Cond.     | Required only if `sensitive=1`                  |
+Stores JSON in a shared `multiple_tools` table.
+- **Headers**: `tool-name`, `sensitive` (0/1), `token` (if sensitive).
+- **Body**: Any JSON.
 
 ---
 
-### **Request Body**
+## **2. Tool Registration & Dedicated Tables (New)**
 
-* JSON format (any JSON payload your tool needs to store).
-* Example:
+For tools that need their own table or specific schema validation.
 
+### **Authentication**
+- **Admin Token**: Required for registering or deleting tools. (Default: `admin-secret-123`)
+- **Tool Token**: Assigned during registration, required for posting data.
+
+### **Endpoints**
+
+#### **A. Register a New Tool**
+**POST** `/register-tool`
+
+Creates a dedicated table `tool_{tool_name}` and registers the schema.
+
+**Headers:**
+- `admin-token`: `<ADMIN_TOKEN>`
+
+**Body:**
 ```json
 {
-  "report_date": "2026-02-05",
-  "total_users": 123,
-  "notes": "All systems operational"
+  "tool_name": "survey_bot",
+  "token": "secure-tool-token-123",
+  "schema": [
+    {"name": "user_id", "type": "int"},
+    {"name": "feedback", "type": "str"}
+  ]
+}
+```
+
+**Supported Types:** `int`, `str`, `bool`, `json`, `float`, `timestamp`.
+
+---
+
+#### **B. Store Data**
+**POST** `/tools/{tool_id}`
+
+Stores data into the tool's specific table. Validates payload against the registered schema.
+
+**Headers:**
+- `token`: `<TOOL_TOKEN>`
+
+**Body:**
+```json
+{
+  "user_id": 42,
+  "feedback": "Loving the new feature!"
 }
 ```
 
 ---
 
-### **Behavior**
+#### **C. Retrieve Data**
+**GET** `/tools/{tool_id}?limit=10&offset=0`
 
-1. **sensitive=0** → stores JSON in `multiple_tools` table, no authentication needed.
-2. **sensitive=1** → must provide valid `token` header (from `auth.py`) or request is rejected with **401 Unauthorized**.
+Fetches data from the tool's table.
 
----
-
-### **Response**
-
-* **Success (201/200)**
-
-```json
-{
-  "message": "JSON stored in common table"
-}
-```
-
-* **Unauthorized (401)**
-
-```json
-{
-  "detail": "Unauthorized: invalid or missing token"
-}
-```
+**Query Params:**
+- `limit`: Max records (default 10).
+- `offset`: Pagination offset (default 0).
 
 ---
 
-### **Example curl Requests**
+#### **D. Delete Tool**
+**DELETE** `/tools/{tool_id}`
 
-#### 1. Public data (no token needed)
+Drop the tool's table and remove registration. **Irreversible.**
 
-```bash
-curl -X POST "https://storage.projectalpha.in/common" \
--H "tool-name: test_tool" \
--H "sensitive: 0" \
--H "Content-Type: application/json" \
--d '{"example": "public data"}'
-```
-
-#### 2. Sensitive data (token required)
-
-```bash
-curl -X POST "https://storage.projectalpha.in/common" \
--H "tool-name: reports_tool" \
--H "sensitive: 1" \
--H "token: token123" \
--H "Content-Type: application/json" \
--d '{"example": "private data"}'
-```
+**Headers:**
+- `admin-token`: `<ADMIN_TOKEN>`
 
 ---
 
-### **Database Table Usage**
+## **3. Setup & Configuration**
 
-* Table: `multiple_tools`
-* Columns:
+### **Environment Variables**
+- `DATABASE_URL`: Connection string (PostgreSQL recommended, SQLite supported for testing).
+- `ADMIN_TOKEN`: Set in `auth.py` (Current default: `admin-secret-123`).
 
-| Column       | Type      | Description                |
-| ------------ | --------- | -------------------------- |
-| `id`         | int       | Auto-increment primary key |
-| `tool_name`  | varchar   | Tool sending the data      |
-| `data`       | JSON      | JSON payload from tool     |
-| `sensitive`  | int       | 0=public, 1=sensitive      |
-| `created_at` | timestamp | Automatic timestamp        |
+### **Tool Registry**
+The system maintains a `registered_tools` table to track:
+- Tool Name
+- Access Token
+- Schema Definition (JSON)
 
-* Example SQL query:
-
-```sql
-SELECT * FROM multiple_tools WHERE tool_name='reports_tool';
-```
-
----
+This allows the API to dynamically load the correct table schema for validation and storage.
