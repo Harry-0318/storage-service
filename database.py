@@ -5,7 +5,14 @@ import os
 
 load_dotenv()
 
-url = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")  # postgresql+psycopg2://user:pass@localhost:5432/db
 
-engine = create_engine(url)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
