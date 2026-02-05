@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Header, Depends, Body, Query
 from sqlalchemy import insert, select, text, Table
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import ProgrammingError, IntegrityError, NoSuchTableError
+from sqlalchemy.exc import ProgrammingError
 from database import get_db, engine
 from models import Base, MultipleTools, RegisteredTool
 from auth import authenticate, verify_admin

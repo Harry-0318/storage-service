@@ -1,5 +1,4 @@
 from sqlalchemy import Table, Column, Integer, String, Boolean, JSON, TIMESTAMP, MetaData, func, Float
-from sqlalchemy.exc import ArgumentError
 
 # Mapping from JSON schema type strings to SQLAlchemy types
 TYPE_MAPPING = {
@@ -41,11 +40,9 @@ def validate_payload(payload: dict, schema_definition: list) -> bool:
     
     for key, value in payload.items():
         if key not in schema_map:
-            # Decide if we allow extra fields or not. 
-            # For now, let's allow them but maybe warn? Or strict mode?
-            # Let's be strict for now to ensure data integrity based on schema.
-            # But wait, standard JSON storage usually allows flexibility.
-            # However, since we are defining a schema, let's assume valid keys.
+            # Extra fields are silently ignored (flexible mode).
+            # To enforce strict mode, uncomment:
+            # raise ValueError(f"Unknown field: {key}")
             pass
 
         # check types if key matches
