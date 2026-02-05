@@ -155,6 +155,7 @@ def get_tool_data(
     stmt = select(tool_table).limit(limit).offset(offset)
     result = db.execute(stmt)
     rows = result.mappings().all()
+    print(rows)
     
     return rows
 
