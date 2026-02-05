@@ -1,1 +1,182 @@
+# ========================
+# OS Generated Files
+# ========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# ========================
+# Logs and databases
+# ========================
+*.log
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.old
+*.swp
+
+# ========================
+# Dependency directories
+# ========================
+node_modules/
+bower_components/
+jspm_packages/
+vendor/
+.venv/
+env/
+ENV/
+venv/
+__pycache__/
+*.egg-info/
+*.dist-info/
+.terraform/
+.cargo/
+target/
+build/
+out/
+bin/
+obj/
+
+# ========================
+# IDEs and editors
+# ========================
+# VS Code
+.vscode/
+.history/
+*.code-workspace
+
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+.metadata/
+bin/
+
+# Mac
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ========================
+# Programming Languages
+# ========================
+# Python
+*.py[cod]
+__pycache__/
+*.pyo
+*.pyd
+*.pyc
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.jnilib
+*.log
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Ruby
+*.gem
+*.rbc
+.bundle/
+config/master.key
+log/
+tmp/
+db/*.sqlite3
+db/*.sqlite3-journal
+
+# PHP
+vendor/
+composer.lock
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# C / C++
+*.o
+*.obj
+*.elf
+*.so
+*.exe
+*.out
+
+# Rust
+Cargo.lock
+target/
+
+# ========================
+# Build files
+# ========================
+/dist/
+/build/
+/out/
+/bin/
+/obj/
+
+# ========================
+# Environment / Secrets
+# ========================
 .env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+credentials.json
+*.secret
+
+
+# ========================
+# Misc
+# ========================
+*.lock
+*.pid
+*.seed
+*.sqlite3
+*.bak
+*.backup
+*.swp
+*.swo
+*.old
+*.tmp
