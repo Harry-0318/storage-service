@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, Header, Depends, Body, Query
+from fastapi import FastAPI, HTTPException, Header, Depends, Body, Query, Request
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import insert, select, text, Table
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import ProgrammingError
@@ -7,13 +9,39 @@ from models import Base, MultipleTools, RegisteredTool
 from auth import authenticate, verify_admin
 from tool_registry import validate_schema, validate_payload, create_tool_table
 from sqlalchemy import MetaData
+import os
 
+# Load internal key from environment
+INTERNAL_KEY = os.getenv("INTERNAL_KEY")
+
+# Protected paths that require x-internal-key header
+PROTECTED_PATHS = ["/common", "/register-tool", "/tools"]
+
+class InternalKeyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        
+        # Check if path is protected
+        is_protected = any(path.startswith(p) for p in PROTECTED_PATHS)
+        
+        if is_protected:
+            internal_key = request.headers.get("x-internal-key")
+            if not INTERNAL_KEY or internal_key != INTERNAL_KEY:
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "forbidden"}
+                )
+        
+        return await call_next(request)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 metadata = MetaData()
 
 app = FastAPI(title="ProjectAlpha JSON Storage Service")
+
+# Add middleware
+app.add_middleware(InternalKeyMiddleware)
 
 @app.post("/common")
 def store_common_json(
@@ -101,6 +129,7 @@ def store_tool_data(
     Validates payload against schema.
     """
     # Find tool
+
     tool_record = db.query(RegisteredTool).filter(RegisteredTool.tool_name == tool_id).first()
     if not tool_record:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -155,7 +184,6 @@ def get_tool_data(
     stmt = select(tool_table).limit(limit).offset(offset)
     result = db.execute(stmt)
     rows = result.mappings().all()
-    print(rows)
     
     return rows
 
